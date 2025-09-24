@@ -147,7 +147,7 @@ def run_backtest():
 
     # Extract backtest parameters
     seasons = form_data.get('seasons', '2023')
-    dataset = form_data.get('dataset', 'nba_2008-2025.csv')
+    dataset = form_data.get('dataset', 'nba_2008-2025.xlsx')
     simulations = form_data.get('simulations', 1000)  # Smaller default for web
     min_edge = form_data.get('minEdge', 1.0)
 

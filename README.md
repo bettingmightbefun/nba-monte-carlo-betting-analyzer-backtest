@@ -153,19 +153,19 @@ Visit `/backtesting` in your Flask app for:
 #### **Command Line Interface**
 ```bash
 # Basic backtest - single season
-python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv
+python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.xlsx
 
 # Multi-season backtest with high precision
-python -m backtesting.runner --seasons 2022,2023,2024 --dataset nba_2008-2025.csv --sims 10000
+python -m backtesting.runner --seasons 2022,2023,2024 --dataset nba_2008-2025.xlsx --sims 10000
 
 # Custom configuration with YAML
-python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv --cfg config/backtest.yaml
+python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.xlsx --cfg config/backtest.yaml
 
 # Override simulation count for faster testing
-python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv --sims 1000
+python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.xlsx --sims 1000
 
 # Parallel processing (future enhancement)
-python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv --num-workers 4
+python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.xlsx --num-workers 4
 
 # View help for all options
 python -m backtesting.runner --help

@@ -146,7 +146,7 @@ def show_comparison(live_roi: float, live_hit_rate: float, live_ev: float, run_i
     except Exception as e:
         print(f"❌ Error generating comparison: {e}")
         print("\nMake sure you've run at least one backtest first:")
-        print("python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv")
+        print("python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.xlsx")
 
 
 if __name__ == "__main__":

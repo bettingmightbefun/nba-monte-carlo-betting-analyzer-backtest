@@ -46,7 +46,7 @@ Ensure you have these installed:
 3. **Install dependencies**:
    ```bash
    pip install --upgrade pip setuptools wheel
-   pip install Flask numpy nba_api pandas
+   pip install Flask numpy nba_api pandas openpyxl
    ```
 
 4. **Start the application**:
@@ -63,7 +63,7 @@ Ensure you have these installed:
 
 2. **Install dependencies globally** (not recommended for production):
    ```bash
-   pip install Flask numpy nba_api pandas
+   pip install Flask numpy nba_api pandas openpyxl
    ```
 
 3. **Start the application**:

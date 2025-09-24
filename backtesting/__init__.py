@@ -19,7 +19,7 @@ cli_view: Command-line results viewer
 Usage
 -----
 # Run a backtest
-python -m backtesting.runner --seasons 2023,2024 --dataset nba_2008-2025.csv
+python -m backtesting.runner --seasons 2023,2024 --dataset nba_2008-2025.xlsx
 
 # View results
 python -m backtesting.cli_view

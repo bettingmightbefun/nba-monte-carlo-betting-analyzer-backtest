@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "NBA Monte Carlo betting analysis using official NBA.com API with 100k default / 1M high-precision simulations",
   "scripts": {
-    "setup:venv": "py -3 -m venv .venv && .\\.venv\\Scripts\\python.exe -m pip install -U pip setuptools wheel && .\\.venv\\Scripts\\python.exe -m pip install -U Flask numpy nba_api pandas nbainjuries",
-    "setup:unix": "python3 -m venv .venv && ./.venv/bin/python -m pip install -U pip setuptools wheel && ./.venv/bin/python -m pip install -U Flask numpy nba_api pandas nbainjuries",
+    "setup:venv": "py -3 -m venv .venv && .\\.venv\\Scripts\\python.exe -m pip install -U pip setuptools wheel && .\\.venv\\Scripts\\python.exe -m pip install -U Flask numpy nba_api pandas nbainjuries openpyxl",
+    "setup:unix": "python3 -m venv .venv && ./.venv/bin/python -m pip install -U pip setuptools wheel && ./.venv/bin/python -m pip install -U Flask numpy nba_api pandas nbainjuries openpyxl",
     "dev": ".\\.venv\\Scripts\\python.exe app.py",
     "dev:unix": "./.venv/bin/python app.py",
     "dev:system": "python app.py",
     "test-api": ".\\.venv\\Scripts\\python.exe nba_league_analytics.py",
     "test-api:unix": "./.venv/bin/python nba_league_analytics.py",
     "test-api:system": "python nba_league_analytics.py",
-    "install-deps": "pip install Flask numpy nba_api pandas nbainjuries",
+    "install-deps": "pip install Flask numpy nba_api pandas nbainjuries openpyxl",
     "clean": "if exist .venv rmdir /s /q .venv",
     "clean:unix": "rm -rf .venv"
   }
