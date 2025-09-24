@@ -294,6 +294,9 @@ def _fetch_recent_games_asof(
     })
 
     if cached is not None:
+        # Ensure GAME_DATE is datetime even for cached data
+        if 'GAME_DATE' in cached.columns:
+            cached['GAME_DATE'] = pd.to_datetime(cached['GAME_DATE'])
         return cached
 
     # Fetch games up to date_to, then take the most recent last_n

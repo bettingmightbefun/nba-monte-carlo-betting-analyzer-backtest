@@ -313,11 +313,7 @@ def _process_single_game(
 
         print(f"[MODEL] Running simulation for {home_team} vs {away_team} ({config['engine']['sims']} sims)", flush=True)
 
-    except Exception as e:
-        print(f"Failed to fetch stats for {game_key}: {e}")
-        return None
-
-    # Run model simulation in backtest mode with as-of data
+        # Run model simulation in backtest mode with as-of data
         model_results, _ = compute_model_report(
             home_team=home_team,
             away_team=away_team,
@@ -333,7 +329,7 @@ def _process_single_game(
         )
 
     except Exception as e:
-        print(f"Failed to run simulation for {game_key}: {e}")
+        print(f"Error processing game {game_key}: {e}", flush=True)
         return None
 
     # Make betting decision based on config

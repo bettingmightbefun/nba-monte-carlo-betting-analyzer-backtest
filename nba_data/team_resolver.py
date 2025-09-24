@@ -56,10 +56,15 @@ def get_team_id(team_name: str) -> int:
     """
     if not team_name:
         raise ValueError("team name cannot be empty")
-    
+
+    # Special handling for ambiguous abbreviations
+    team_name_upper = team_name.upper().strip()
+    if team_name_upper == "SA":
+        # SA typically refers to San Antonio Spurs in sports contexts
+        return 1610612759  # San Antonio Spurs
+
     # Get all NBA teams from static data
     nba_teams = teams.get_teams()
-    team_name_upper = team_name.upper().strip()
     
     # Try exact matches first (most reliable)
     for team in nba_teams:

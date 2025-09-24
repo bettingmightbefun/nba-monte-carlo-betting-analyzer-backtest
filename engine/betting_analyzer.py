@@ -205,12 +205,17 @@ def _convert_asof_stats_to_team_data(
         'drtg': asof_stats.get('drtg_last10', season_stats['drtg']),
     }
 
-    # Create rest profile from as-of flags
-    rest_profile = {
-        'b2b': asof_stats.get('b2b', False),
-        'three_in_four': asof_stats.get('three_in_four', False),
-        'four_in_six': asof_stats.get('four_in_six', False),
-    }
+    # Create proper TeamRestProfile object for compatibility
+    from nba_data.schedule_fatigue import TeamRestProfile
+    rest_profile = TeamRestProfile(
+        last_game_date=None,  # Not available in as-of stats
+        rest_days_before_last_game=None,  # Not available in as-of stats
+        rest_days_until_next_game=None,  # Not available in as-of stats
+        fatigue_flag_last_game="normal",  # Default
+        average_rest_days=2.0,  # Default
+        back_to_back_rate=0.0,  # Default
+        fatigue_score_mean=0.5,  # Default
+    )
 
     return TeamDataBundle(
         team_name=team_name,
