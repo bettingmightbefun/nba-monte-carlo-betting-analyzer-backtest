@@ -215,7 +215,7 @@ def build_text_report(
     for note in away_adjustments["head_to_head"].get("notes", []):
         lines.append(f"    - {away_team}: {note}")
     lines.append("")
-    lines.append("🎲 MONTE CARLO SIMULATION RESULTS")
+    lines.append("MONTE CARLO SIMULATION RESULTS")
     lines.append(
         "Simulation Mode: "
         + (

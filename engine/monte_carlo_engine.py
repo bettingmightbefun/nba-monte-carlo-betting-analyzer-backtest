@@ -76,7 +76,7 @@ def run_monte_carlo_simulation(home_stats: TeamStats, away_stats: TeamStats,
     if seed is not None:
         random.seed(seed)
 
-    print(f"🎲 Running {num_simulations:,} Monte Carlo simulations...")
+    print(f"Running {num_simulations:,} Monte Carlo simulations...")
     
     # Initialize tracking variables
     covers_count = 0
@@ -269,7 +269,7 @@ def test_monte_carlo_engine():
         drtg=112.0, drtg_std=5.0
     )
     
-    print(f"\n🎲 Running test simulation:")
+    print(f"\nRunning test simulation:")
     print(f"Home: Pace={home_team.pace}, ORtg={home_team.ortg}, DRtg={home_team.drtg}")
     print(f"Away: Pace={away_team.pace}, ORtg={away_team.ortg}, DRtg={away_team.drtg}")
     
