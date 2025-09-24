@@ -21,10 +21,20 @@ of the JSON payload so the frontend can display a traceback.
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import subprocess
 import traceback
-from flask import Flask, render_template, jsonify, make_response, request
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    make_response,
+    render_template,
+    request,
+    stream_with_context,
+)
 
 from engine import betting_analyzer
 
@@ -131,76 +141,106 @@ def backtesting():
 
 @app.route("/api/backtesting/run", methods=["POST"])
 def run_backtest():
-    """Handle backtest execution requests."""
-    try:
-        form_data = request.get_json() or {}
+    """Handle backtest execution requests with streaming output."""
 
-        # Extract backtest parameters
-        seasons = form_data.get('seasons', '2023')
-        dataset = form_data.get('dataset', 'nba_2008-2025.csv')
-        simulations = form_data.get('simulations', 1000)  # Smaller default for web
-        min_edge = form_data.get('minEdge', 1.0)
+    form_data = request.get_json() or {}
 
-        # Build command
-        cmd = [
-            'python', '-m', 'backtesting.runner',
-            '--seasons', seasons,
-            '--dataset', dataset,
-            '--cfg', 'config/backtest.yaml',
-            '--sims', str(simulations)
-        ]
+    # Extract backtest parameters
+    seasons = form_data.get('seasons', '2023')
+    dataset = form_data.get('dataset', 'nba_2008-2025.csv')
+    simulations = form_data.get('simulations', 1000)  # Smaller default for web
+    min_edge = form_data.get('minEdge', 1.0)
 
-        # Run the backtest (this might take time)
-        print(f"[WEB] Starting backtest: {' '.join(cmd)}")
-        # Use environment variable to disable output buffering
-        env = os.environ.copy()
-        env['PYTHONUNBUFFERED'] = '1'
+    # Build command
+    cmd = [
+        'python', '-m', 'backtesting.runner',
+        '--seasons', seasons,
+        '--dataset', dataset,
+        '--cfg', 'config/backtest.yaml',
+        '--sims', str(simulations)
+    ]
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd='.',
-            timeout=600,  # Increased to 10 minutes for web interface
-            env=env  # Disable buffering
-        )
+    app.logger.info("[WEB] Starting backtest: %s", ' '.join(cmd))
 
-        print(f"[WEB] Backtest completed with return code: {result.returncode}")
-        print(f"[WEB] Output length: {len(result.stdout)} chars")
-        print(f"[WEB] Error length: {len(result.stderr)} chars")
-        if result.stderr:
-            print(f"[WEB] Stderr: {result.stderr[:500]}...")
+    env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
 
-        if result.returncode == 0:
-            print(f"[WEB] Backtest completed successfully")
-            # Add some test output if stdout is empty for debugging
-            output = result.stdout
-            if not output.strip():
-                output = "[INIT] Backtest started\n[PROGRESS] 50.0% - Test progress\n[COMPLETE] Backtest finished!"
-                print(f"[WEB] Using test output since stdout was empty")
-            return jsonify({
-                "ok": True,
-                "output": output,
-                "run_completed": True
-            })
+    progress_pattern = re.compile(r"\[PROGRESS\]\s+([\d.]+)%")
+
+    def format_event(event: str, **payload: object) -> str:
+        data = {"event": event, **payload}
+        return json.dumps(data) + "\n"
+
+    def generate():
+        yield format_event("status", message="Starting backtest execution...")
+
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                cwd='.',
+                env=env,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            app.logger.exception("[WEB] Failed to start backtest")
+            yield format_event("error", message=f"Failed to start backtest: {exc}")
+            yield format_event("completed", success=False, message="Failed to start backtest")
+            return
+
+        returncode = None
+
+        try:
+            assert process.stdout is not None  # For type checkers
+            for raw_line in iter(process.stdout.readline, ''):
+                line = raw_line.rstrip('\n')
+                if not line:
+                    continue
+
+                yield format_event("output", line=line)
+
+                progress_match = progress_pattern.search(line)
+                if progress_match:
+                    try:
+                        percent = float(progress_match.group(1))
+                        yield format_event("progress", percent=percent, message=line)
+                    except ValueError:
+                        pass
+
+                if "[COMPLETE]" in line:
+                    yield format_event("progress", percent=100.0, message=line)
+
+            returncode = process.wait()
+        except Exception as exc:  # pragma: no cover - defensive
+            process.kill()
+            app.logger.exception("[WEB] Backtest execution error")
+            yield format_event("error", message=f"Error during backtest: {exc}")
+            yield format_event("completed", success=False, message="Backtest terminated early")
+            return
+        finally:
+            if process.stdout:
+                process.stdout.close()
+
+        if returncode == 0:
+            app.logger.info("[WEB] Backtest completed successfully")
+            yield format_event("completed", success=True, message="Backtest completed successfully!")
         else:
-            print(f"[WEB] Backtest failed with return code {result.returncode}")
-            return jsonify({
-                "ok": False,
-                "error": result.stderr,
-                "command": ' '.join(cmd)
-            })
+            app.logger.warning("[WEB] Backtest failed with return code %s", returncode)
+            yield format_event(
+                "error",
+                message=f"Backtest failed with return code {returncode}",
+                returncode=returncode,
+            )
+            yield format_event(
+                "completed",
+                success=False,
+                message="Backtest failed",
+                returncode=returncode,
+            )
 
-    except subprocess.TimeoutExpired:
-        print("[WEB] Backtest timed out")
-        return jsonify({
-            "ok": False,
-            "error": "Backtest timed out after 10 minutes"
-        })
-    except Exception as exc:
-        tb = traceback.format_exc()
-        print(f"[WEB] Backtest error: {exc}")
-        return jsonify({"ok": False, "error": str(exc), "traceback": tb})
+    return Response(stream_with_context(generate()), mimetype="application/x-ndjson")
 
 
 @app.route("/api/backtesting/results")
