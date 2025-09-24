@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NBA Betting Edge Analyzer</title>
+    <!-- Modular CSS Architecture -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+    <!-- Component CSS Modules -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tabs.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dropdowns.css') }}" />
+    <!-- Feature CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='betting-analysis.css') }}" />
+    <!-- Results CSS Modules -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/summary.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/monte-carlo.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/four-factors.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/misc-stats.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/calculations-display.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results/error-display.css') }}" />
+    <!-- Responsive CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <div class="logo">
+            <i class="fas fa-chart-line"></i>
+            <h1>NBA Betting Edge Analyzer</h1>
+          </div>
+          <p class="subtitle">
+            Real-time NBA data analysis for smart betting decisions
+          </p>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Input Form -->
+        <section class="analysis-form">
+          <h2><i class="fas fa-basketball-ball"></i> Game Analysis Setup</h2>
+          
+          <div class="form-grid">
+            <!-- Teams and Betting Lines -->
+            <div class="teams-section">
+              <div class="team-group">
+                <div class="form-group">
+                  <label for="homeTeam">
+                    <i class="fas fa-home"></i> Home Team
+                  </label>
+                  <div class="team-select-wrapper">
+                    <select id="homeTeam" class="team-select">
+                      <option value="">Select Home Team</option>
+                      <option value="Atlanta Hawks">Atlanta Hawks</option>
+                      <option value="Boston Celtics">Boston Celtics</option>
+                      <option value="Brooklyn Nets">Brooklyn Nets</option>
+                      <option value="Charlotte Hornets">Charlotte Hornets</option>
+                      <option value="Chicago Bulls">Chicago Bulls</option>
+                      <option value="Cleveland Cavaliers">Cleveland Cavaliers</option>
+                      <option value="Dallas Mavericks">Dallas Mavericks</option>
+                      <option value="Denver Nuggets">Denver Nuggets</option>
+                      <option value="Detroit Pistons">Detroit Pistons</option>
+                      <option value="Golden State Warriors">Golden State Warriors</option>
+                      <option value="Houston Rockets">Houston Rockets</option>
+                      <option value="Indiana Pacers">Indiana Pacers</option>
+                      <option value="Los Angeles Clippers">Los Angeles Clippers</option>
+                      <option value="Los Angeles Lakers">Los Angeles Lakers</option>
+                      <option value="Memphis Grizzlies">Memphis Grizzlies</option>
+                      <option value="Miami Heat">Miami Heat</option>
+                      <option value="Milwaukee Bucks">Milwaukee Bucks</option>
+                      <option value="Minnesota Timberwolves">Minnesota Timberwolves</option>
+                      <option value="New Orleans Pelicans">New Orleans Pelicans</option>
+                      <option value="New York Knicks">New York Knicks</option>
+                      <option value="Oklahoma City Thunder" selected>Oklahoma City Thunder</option>
+                      <option value="Orlando Magic">Orlando Magic</option>
+                      <option value="Philadelphia 76ers">Philadelphia 76ers</option>
+                      <option value="Phoenix Suns">Phoenix Suns</option>
+                      <option value="Portland Trail Blazers">Portland Trail Blazers</option>
+                      <option value="Sacramento Kings">Sacramento Kings</option>
+                      <option value="San Antonio Spurs">San Antonio Spurs</option>
+                      <option value="Toronto Raptors">Toronto Raptors</option>
+                      <option value="Utah Jazz">Utah Jazz</option>
+                      <option value="Washington Wizards">Washington Wizards</option>
+                    </select>
+                    <i class="fas fa-chevron-down select-arrow"></i>
+                  </div>
+                </div>
+
+                <div class="form-group betting-section">
+                  <label>
+                    <i class="fas fa-chart-bar"></i> Home Team Betting Line
+                  </label>
+                  <div class="betting-inputs">
+                    <div class="betting-input">
+                      <label for="homeSpread">Spread</label>
+                      <input
+                        type="number"
+                        id="homeSpread"
+                        step="0.5"
+                        placeholder="-6.5"
+                        value="-6.5"
+                      />
+                    </div>
+                    <div class="betting-input">
+                      <label for="homeOdds">Decimal Odds</label>
+                      <input
+                        type="number"
+                        id="homeOdds"
+                        step="0.01"
+                        min="1"
+                        placeholder="1.91"
+                        value="1.91"
+                      />
+                    </div>
+                  </div>
+                  <small>Home team spread: negative = favored, positive = underdog</small>
+                </div>
+              </div>
+
+              <div class="team-group">
+                <div class="form-group">
+                  <label for="awayTeam">
+                    <i class="fas fa-plane"></i> Away Team
+                  </label>
+                  <div class="team-select-wrapper">
+                    <select id="awayTeam" class="team-select">
+                      <option value="">Select Away Team</option>
+                      <option value="Atlanta Hawks">Atlanta Hawks</option>
+                      <option value="Boston Celtics">Boston Celtics</option>
+                      <option value="Brooklyn Nets">Brooklyn Nets</option>
+                      <option value="Charlotte Hornets">Charlotte Hornets</option>
+                      <option value="Chicago Bulls">Chicago Bulls</option>
+                      <option value="Cleveland Cavaliers">Cleveland Cavaliers</option>
+                      <option value="Dallas Mavericks">Dallas Mavericks</option>
+                      <option value="Denver Nuggets">Denver Nuggets</option>
+                      <option value="Detroit Pistons">Detroit Pistons</option>
+                      <option value="Golden State Warriors">Golden State Warriors</option>
+                      <option value="Houston Rockets" selected>Houston Rockets</option>
+                      <option value="Indiana Pacers">Indiana Pacers</option>
+                      <option value="Los Angeles Clippers">Los Angeles Clippers</option>
+                      <option value="Los Angeles Lakers">Los Angeles Lakers</option>
+                      <option value="Memphis Grizzlies">Memphis Grizzlies</option>
+                      <option value="Miami Heat">Miami Heat</option>
+                      <option value="Milwaukee Bucks">Milwaukee Bucks</option>
+                      <option value="Minnesota Timberwolves">Minnesota Timberwolves</option>
+                      <option value="New Orleans Pelicans">New Orleans Pelicans</option>
+                      <option value="New York Knicks">New York Knicks</option>
+                      <option value="Oklahoma City Thunder">Oklahoma City Thunder</option>
+                      <option value="Orlando Magic">Orlando Magic</option>
+                      <option value="Philadelphia 76ers">Philadelphia 76ers</option>
+                      <option value="Phoenix Suns">Phoenix Suns</option>
+                      <option value="Portland Trail Blazers">Portland Trail Blazers</option>
+                      <option value="Sacramento Kings">Sacramento Kings</option>
+                      <option value="San Antonio Spurs">San Antonio Spurs</option>
+                      <option value="Toronto Raptors">Toronto Raptors</option>
+                      <option value="Utah Jazz">Utah Jazz</option>
+                      <option value="Washington Wizards">Washington Wizards</option>
+                    </select>
+                    <i class="fas fa-chevron-down select-arrow"></i>
+                  </div>
+                </div>
+
+                <div class="form-group betting-section">
+                  <label>
+                    <i class="fas fa-chart-bar"></i> Away Team Betting Line
+                  </label>
+                  <div class="betting-inputs">
+                    <div class="betting-input">
+                      <label for="awaySpread">Spread</label>
+                      <input
+                        type="number"
+                        id="awaySpread"
+                        step="0.5"
+                        placeholder="+6.5"
+                        value="6.5"
+                      />
+                    </div>
+                    <div class="betting-input">
+                      <label for="awayOdds">Decimal Odds</label>
+                      <input
+                        type="number"
+                        id="awayOdds"
+                        step="0.01"
+                        min="1"
+                        placeholder="1.91"
+                        value="1.91"
+                      />
+                    </div>
+                  </div>
+                  <small>Away team spread: positive = underdog, negative = favored</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="settings-section">
+              <div class="form-group">
+                <label for="seasonYear">
+                  <i class="fas fa-calendar"></i> Season
+                </label>
+                <select id="seasonYear">
+                  <option value="2025">2024-25 Season</option>
+                  <option value="2024">2023-24 Season</option>
+                  <option value="2023">2022-23 Season</option>
+                </select>
+              </div>
+
+              <div class="form-group settings-box">
+                <label for="recencyWeight">
+                  <i class="fas fa-clock"></i> Recent Form Weight
+                </label>
+                <input
+                  type="range"
+                  id="recencyWeight"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value="0.4"
+                />
+                <div class="range-labels">
+                  <span>Full Season Stats</span>
+                  <span id="recencyValue">40%</span>
+                  <span>Last 10 Games</span>
+                </div>
+                <small>
+                  <strong>What this does:</strong> Controls how much weight to give recent performance vs full season.
+                  40% means: 60% season stats + 40% last 10 games stats.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <i class="fas fa-sliders-h"></i> Simulation Precision
+                </label>
+                <div class="precision-toggle" role="radiogroup" aria-label="Simulation Precision">
+                  <label class="precision-option">
+                    <input
+                      type="radio"
+                      name="simulationMode"
+                      value="standard"
+                      data-simulations="100000"
+                      checked
+                    />
+                    <div class="precision-option-content">
+                      <span class="precision-title">Standard • 100k sims</span>
+                      <span class="precision-description">Fast run for live betting decisions</span>
+                    </div>
+                  </label>
+                  <label class="precision-option">
+                    <input
+                      type="radio"
+                      name="simulationMode"
+                      value="high"
+                      data-simulations="1000000"
+                    />
+                    <div class="precision-option-content">
+                      <span class="precision-title">High Precision • 1M sims</span>
+                      <span class="precision-description">~2× tighter confidence bands</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="action-section">
+            <button id="run" class="analyze-btn">
+              <i class="fas fa-calculator"></i>
+              <span>Analyze Betting Edge</span>
+              <div class="loader hidden"></div>
+            </button>
+          </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section">
+          <!-- Quick Summary -->
+          <div id="quickSummary" class="quick-summary hidden">
+            <div class="summary-card">
+              <div id="summaryContent" class="summary-content">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Report -->
+          <div id="detailedResults" class="detailed-results hidden">
+            <div class="results-tabs">
+              <button class="tab-btn active" data-tab="report">
+                <i class="fas fa-file-alt"></i> Analysis Report
+              </button>
+              <button class="tab-btn" data-tab="data">
+                <i class="fas fa-code"></i> </> Calculations & Raw Data
+              </button>
+            </div>
+
+            <div class="tab-content">
+              <div id="reportTab" class="tab-pane active">
+                <pre id="report" class="report"></pre>
+              </div>
+              <div id="dataTab" class="tab-pane">
+                <div class="data-view-container">
+                  <div class="calculation-breakdown">
+                    <h3><i class="fas fa-calculator"></i> Calculation Breakdown (JSON)</h3>
+                    <pre id="calculationDetails" class="json"></pre>
+                  </div>
+                  <div class="raw-data-section">
+                    <h3><i class="fas fa-database"></i> Raw JSON Data</h3>
+                    <pre id="json" class="json"></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Display -->
+          <div id="errorSection" class="error-section hidden">
+            <div class="error-card">
+              <h3><i class="fas fa-exclamation-triangle"></i> Analysis Error</h3>
+              <pre id="error" class="error"></pre>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>
+          <i class="fas fa-chart-line"></i>
+          Powered by official NBA.com API • 
+          <strong>For educational purposes only</strong>
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='js/app-controller.js') }}"></script>
+  </body>
+</html>

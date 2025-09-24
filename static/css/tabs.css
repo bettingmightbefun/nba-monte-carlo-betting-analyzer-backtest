@@ -1,0 +1,105 @@
+/* =============================================================================
+   TABS.CSS - Tab Navigation Components
+   ============================================================================= */
+
+/* Tab Container */
+.results-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Tab Button */
+.tab-btn {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #6c757d;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.tab-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.tab-btn.active {
+  color: #3498db;
+  background: white;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #3498db;
+}
+
+/* Tab Content */
+.tab-pane {
+  display: none;
+  padding: 2rem;
+  background: white;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Tab Variants */
+.tabs-vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs-vertical .tab-btn {
+  flex: none;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.tabs-vertical .tab-btn.active::after {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
+  width: 3px;
+  height: auto;
+}
+
+/* Tab Icons */
+.tab-btn i {
+  font-size: 1.1em;
+}
+
+/* Responsive Tabs */
+@media (max-width: 768px) {
+  .results-tabs {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    text-align: left;
+    justify-content: flex-start;
+  }
+  
+  .tab-btn.active::after {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 4px;
+    height: auto;
+  }
+}

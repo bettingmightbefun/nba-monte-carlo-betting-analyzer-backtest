@@ -1,0 +1,141 @@
+/* =============================================================================
+   RESPONSIVE.CSS - Mobile and Tablet Responsive Design
+   ============================================================================= */
+
+/* Large Tablets and Small Desktops */
+@media (max-width: 1200px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .teams-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Tablets */
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .teams-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .main-content {
+    padding: 1.5rem;
+  }
+}
+
+/* Mobile Phones */
+@media (max-width: 768px) {
+  .container {
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .logo {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .results-tabs {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    text-align: left;
+  }
+  
+  .betting-section {
+    padding: 1rem;
+    min-height: auto;
+  }
+  
+  .settings-box {
+    padding: 1rem;
+  }
+  
+  .analysis-form {
+    padding: 1.5rem;
+  }
+  
+  .summary-content {
+    padding: 1.5rem;
+  }
+  
+  .analyze-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+}
+
+/* Small Mobile Phones */
+@media (max-width: 480px) {
+  .header {
+    padding: 1.5rem 0;
+  }
+  
+  .header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .main-content {
+    padding: 0.75rem;
+  }
+  
+  .analysis-form {
+    padding: 1rem;
+  }
+  
+  .summary-content {
+    padding: 1rem;
+  }
+  
+  .tab-pane {
+    padding: 1rem;
+  }
+  
+  .form-group label {
+    font-size: 0.9rem;
+  }
+  
+  .betting-input label {
+    font-size: 0.85rem;
+  }
+  
+  .analyze-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}

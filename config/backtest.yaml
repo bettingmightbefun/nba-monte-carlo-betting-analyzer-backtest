@@ -1,0 +1,27 @@
+# NBA Backtesting Configuration
+# ==============================
+
+# Entry criteria for betting decisions
+entry:
+  market: spread  # spread, total, or ml
+  min_edge_pts: 1.0  # Minimum edge in points for spreads/totals
+  max_bets_per_day: 10  # Maximum bets per day
+
+# Sizing and risk management
+sizing:
+  method: fixed_unit  # fixed_unit or fractional_kelly
+  kelly_fraction: 0.25  # Fraction of Kelly stake to use (if fractional_kelly)
+  unit_stake: 1.0  # Base unit stake in dollars
+  stake_cap_units: 2.0  # Maximum stake as multiple of unit_stake
+
+# Engine configuration
+engine:
+  sims: 5000  # Default simulations per game (can be overridden by --sims)
+  cache_dir: .cache/nba_api  # Directory for API response caching
+  seed: 42  # Random seed for deterministic results
+
+# Output configuration
+outputs:
+  dir: runs/  # Base directory for run artifacts
+  per_game_format: parquet  # parquet or csv
+  include_stress_tests: true  # Include re-pricing stress tests

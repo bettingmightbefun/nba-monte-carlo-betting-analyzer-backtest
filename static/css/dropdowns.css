@@ -1,0 +1,207 @@
+/* =============================================================================
+   DROPDOWNS.CSS - Dropdown & Searchable Select Components
+   ============================================================================= */
+
+/* Basic Dropdown Wrapper */
+.team-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Standard Select Dropdown */
+.team-select {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.team-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  transform: translateY(-1px);
+}
+
+.team-select:hover {
+  border-color: #bdc3c7;
+  transform: translateY(-1px);
+}
+
+/* Custom Select Arrow */
+.select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7f8c8d;
+  pointer-events: none;
+  transition: transform 0.3s ease;
+}
+
+.team-select:focus + .select-arrow {
+  transform: translateY(-50%) rotate(180deg);
+  color: #3498db;
+}
+
+/* Enhanced Dropdown Options */
+.team-select option {
+  padding: 0.5rem;
+  background: white;
+  color: #2c3e50;
+}
+
+.team-select option:hover {
+  background: #f8f9fa;
+}
+
+/* Searchable Dropdown Enhancement */
+.team-select-searchable {
+  position: relative;
+}
+
+.team-search-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+}
+
+.team-search-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Dropdown List */
+.team-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.team-dropdown-list.show {
+  display: block;
+}
+
+.team-dropdown-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f2f6;
+}
+
+.team-dropdown-item:hover,
+.team-dropdown-item.highlighted {
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+.team-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+/* Team Icons Enhancement */
+.team-select option::before {
+  content: '🏀 ';
+}
+
+/* Dropdown Variants */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.dropdown-toggle:hover {
+  border-color: #bdc3c7;
+}
+
+.dropdown-toggle::after {
+  content: '▼';
+  font-size: 0.8em;
+  color: #7f8c8d;
+  margin-left: auto;
+  transition: transform 0.3s ease;
+}
+
+.dropdown.open .dropdown-toggle::after {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f2f6;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+/* Multi-select Dropdown */
+.multiselect-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.multiselect-dropdown .dropdown-item input[type="checkbox"] {
+  margin: 0;
+}

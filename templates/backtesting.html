@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Backtesting Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='betting-analysis.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/backtesting.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎯 NBA Backtesting Dashboard</h1>
+            <p>Evaluate betting strategies across historical seasons with leakage-free data</p>
+            <nav class="nav-tabs">
+                <a href="/" class="nav-link">Live Analysis</a>
+                <a href="/backtesting" class="nav-link active">Backtesting</a>
+            </nav>
+        </header>
+
+        <div class="backtesting-layout">
+            <!-- Configuration Panel -->
+            <div class="config-panel">
+                <h2>⚙️ Configuration</h2>
+
+                <form id="backtestForm" class="config-form">
+                    <div class="form-group">
+                        <label for="seasons">Seasons to Test:</label>
+                        <input type="text" id="seasons" value="2023" placeholder="e.g., 2023,2024,2025">
+                        <small>2023 = 2022-23 season, 2024 = 2023-24 season (comma-separated)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataset">Data File:</label>
+                        <input type="text" id="dataset" value="nba_2008-2025.csv" placeholder="path/to/data.csv">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="simulations">Simulations per Game:</label>
+                        <select id="simulations">
+                            <option value="1000">1,000 (Quick Test)</option>
+                            <option value="5000" selected>5,000 (Standard)</option>
+                            <option value="10000">10,000 (Thorough)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="minEdge">Minimum Edge (pts):</label>
+                        <input type="number" id="minEdge" value="1.0" step="0.1" min="0">
+                    </div>
+
+                    <button type="submit" class="run-button" id="runButton">
+                        🚀 Run Backtest
+                    </button>
+                </form>
+
+                <div id="progressContainer" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">Running backtest...</p>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel">
+                <h2>📊 Results</h2>
+
+                <!-- Latest Results Summary -->
+                <div id="latestResults" class="results-section">
+                    <h3>Latest Backtest Summary</h3>
+                    <div id="summaryContent" class="summary-content">
+                        <p>Loading latest results...</p>
+                    </div>
+                    <button id="refreshResults" class="refresh-button">🔄 Refresh</button>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div id="performanceMetrics" class="metrics-grid hidden">
+                    <div class="metric-card">
+                        <h4>ROI</h4>
+                        <div class="metric-value" id="roiValue">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Hit Rate</h4>
+                        <div class="metric-value" id="hitRateValue">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Total P&L</h4>
+                        <div class="metric-value" id="pnlValue">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Bets Placed</h4>
+                        <div class="metric-value" id="betsValue">--</div>
+                    </div>
+                </div>
+
+                <!-- Historical Runs -->
+                <div id="historicalRuns" class="historical-section">
+                    <h3>Historical Backtests</h3>
+                    <div id="runsList" class="runs-list">
+                        <p>Loading historical runs...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Panel -->
+            <div class="comparison-panel">
+                <h2>🔍 Live vs Backtest Comparison</h2>
+
+                <form id="comparisonForm" class="comparison-form">
+                    <h3>Enter Current Live Performance</h3>
+
+                    <div class="form-group">
+                        <label for="liveRoi">Current ROI (%):</label>
+                        <input type="number" id="liveRoi" step="0.1" placeholder="e.g., 8.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="liveHitRate">Current Hit Rate (%):</label>
+                        <input type="number" id="liveHitRate" step="0.1" placeholder="e.g., 53.2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="liveEv">EV per Unit:</label>
+                        <input type="number" id="liveEv" step="0.001" placeholder="e.g., 0.045">
+                    </div>
+
+                    <button type="submit" class="compare-button">
+                        ⚖️ Compare with Backtest
+                    </button>
+                </form>
+
+                <div id="comparisonResults" class="comparison-results hidden">
+                    <h3>Comparison Report</h3>
+                    <div id="comparisonContent" class="comparison-content">
+                        <pre id="comparisonText"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div id="chartsSection" class="charts-section hidden">
+            <h2>📈 Performance Charts</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="equityChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="calibrationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/backtesting.js') }}"></script>
+</body>
+</html>

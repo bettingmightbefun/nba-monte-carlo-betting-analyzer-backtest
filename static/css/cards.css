@@ -1,0 +1,114 @@
+/* =============================================================================
+   CARDS.CSS - Card Components & Layout Containers
+   ============================================================================= */
+
+/* Summary Card */
+.summary-card {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.summary-header {
+  display: none;
+}
+
+.summary-content {
+  padding: 0;
+}
+
+/* Detailed Results Card */
+.detailed-results {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Card Variants */
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background: #f8f9fa;
+  padding: 1.25rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.card-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e9ecef;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* Card States */
+.card-success {
+  border-left: 4px solid #27ae60;
+}
+
+.card-warning {
+  border-left: 4px solid #f39c12;
+}
+
+.card-danger {
+  border-left: 4px solid #e74c3c;
+}
+
+.card-info {
+  border-left: 4px solid #3498db;
+}
+
+/* Card Grid Layout */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Compact Card */
+.card-compact {
+  padding: 1rem;
+}
+
+.card-compact .card-header {
+  padding: 0.75rem 1rem;
+}
+
+.card-compact .card-body {
+  padding: 1rem;
+}
+
+/* Hover Effects */
+.card-hover {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}

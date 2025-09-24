@@ -1,0 +1,59 @@
+/* =============================================================================
+   BETTING-ANALYSIS.CSS - Betting Analysis Input Components
+   ============================================================================= */
+
+/* Betting Section Styles */
+.betting-section {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 140px;
+}
+
+.betting-section > label {
+  margin-bottom: 1rem !important;
+  font-size: 1rem !important;
+}
+
+.betting-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.betting-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.betting-input label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.betting-input input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.betting-input input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+/* Settings Box Styles */
+.settings-box {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
