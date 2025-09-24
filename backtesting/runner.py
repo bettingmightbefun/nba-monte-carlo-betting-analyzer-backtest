@@ -184,9 +184,26 @@ def run_backtest(
     # Sort games chronologically for proper backtesting
     df = df.sort_values(['date', 'game_key']).reset_index(drop=True)
 
+    # Cache max daily bet limit from config (defaults to 10 if unspecified)
+    max_daily_bets = config['entry'].get('max_bets_per_day', 10)
+
     # Process each game
     for idx, game in df.iterrows():
         try:
+            # Enforce per-day bet cap before running heavier processing
+            game_date_str = game['date'].strftime('%Y-%m-%d')
+            current_daily_bets = daily_bet_counts.get(game_date_str, 0)
+            if current_daily_bets >= max_daily_bets:
+                if current_daily_bets == max_daily_bets:
+                    print(
+                        f"[ENTRY] Daily bet limit reached for {game_date_str}; skipping remaining games on this date",
+                        flush=True
+                    )
+                continue
+
+            home_team = normalize_team_name(game['home'])
+            away_team = normalize_team_name(game['away'])
+
             game_result = _process_single_game(
                 game=game,
                 config=config,
@@ -197,8 +214,7 @@ def run_backtest(
                 per_game_results.append(game_result)
                 bet_counts[game['season_end_year']] += 1
                 # Update daily bet count
-                game_date_str = game['date'].strftime('%Y-%m-%d')
-                daily_bet_counts[game_date_str] = daily_bet_counts.get(game_date_str, 0) + 1
+                daily_bet_counts[game_date_str] = current_daily_bets + 1
 
                 # Progress indicator with more detail
                 if (idx + 1) % 50 == 0 or idx == 0:
@@ -344,14 +360,6 @@ def _process_single_game(
         return None  # No bet placed
 
     print(f"[BET] Placed {bet_decision['side']} bet on {home_team if bet_decision['side'] == 'home' else away_team} vs {away_team if bet_decision['side'] == 'home' else home_team} (edge: {bet_decision.get('edge_percentage', 'N/A')}%)", flush=True)
-
-    # Check daily bet limit
-    game_date_str = game_date.strftime('%Y-%m-%d')
-    current_daily_bets = daily_bet_counts.get(game_date_str, 0)
-    max_daily_bets = config['entry'].get('max_bets_per_day', 10)
-
-    if current_daily_bets >= max_daily_bets:
-        return None  # Daily limit reached
 
     # Calculate bet outcome and P&L
     outcome = _calculate_bet_outcome(
