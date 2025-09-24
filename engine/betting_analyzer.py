@@ -283,7 +283,7 @@ def _run_simulation(
 ) -> Tuple[SimulationResults, str]:
     simulation_mode = "high_precision" if num_simulations >= 1_000_000 else "standard"
     print(
-        "\n🎲 MONTE CARLO SIMULATION - Running "
+        "\nMONTE CARLO SIMULATION - Running "
         f"{num_simulations:,} virtual games ({simulation_mode.replace('_', ' ').title()} mode)..."
     )
     results = run_monte_carlo_simulation(
