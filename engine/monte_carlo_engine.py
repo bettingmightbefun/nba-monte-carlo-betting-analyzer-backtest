@@ -153,7 +153,7 @@ def run_monte_carlo_simulation(home_stats: TeamStats, away_stats: TeamStats,
     ci_upper = avg_margin + (1.96 * margin_standard_error)
     
     print(
-        "✅ Simulation complete! Home team covers in "
+        "Simulation complete! Home team covers in "
         f"{covers_count:,} out of {num_simulations:,} games"
     )
 
