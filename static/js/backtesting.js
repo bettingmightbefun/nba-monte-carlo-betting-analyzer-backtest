@@ -33,16 +33,16 @@ function initializeEventListeners() {
 async function handleBacktestSubmit(event) {
     event.preventDefault();
 
-    const formData = new FormData(event.target);
-    const data = {
+    const payload = {
         seasons: document.getElementById('seasons').value,
         dataset: document.getElementById('dataset').value,
         simulations: document.getElementById('simulations').value,
         minEdge: document.getElementById('minEdge').value
     };
 
-    // Update UI for running state
     setRunningState(true);
+
+    let completionEvent = null;
 
     try {
         const response = await fetch('/api/backtesting/run', {
@@ -50,30 +50,126 @@ async function handleBacktestSubmit(event) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+        }
 
-        if (result.ok) {
-            // Parse and display the console output
-            if (result.output) {
-                parseAndDisplayConsoleOutput(result.output);
+        if (!response.body) {
+            throw new Error('Streaming response not supported in this browser');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let cancelRequested = false;
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                break;
             }
 
-            showSuccessMessage('Backtest completed successfully!');
-            // Reload results after a short delay
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const rawLine of lines) {
+                if (!rawLine.trim()) {
+                    continue;
+                }
+
+                let eventData = null;
+                try {
+                    eventData = JSON.parse(rawLine);
+                } catch (parseError) {
+                    addConsoleLine(`Malformed stream chunk: ${rawLine}`, 'error');
+                    continue;
+                }
+
+                const { event: eventType } = eventData;
+                switch (eventType) {
+                    case 'status':
+                        if (eventData.message) {
+                            addConsoleLine(eventData.message, 'status');
+                        }
+                        break;
+                    case 'output':
+                        if (eventData.line) {
+                            handleConsoleLine(eventData.line);
+                        }
+                        break;
+                    case 'progress':
+                        if (typeof eventData.percent === 'number') {
+                            updateProgressBar(eventData.percent, eventData.message);
+                        }
+                        break;
+                    case 'error':
+                        if (eventData.message) {
+                            addConsoleLine(eventData.message, 'error');
+                        }
+                        if (!completionEvent) {
+                            showErrorMessage(eventData.message || 'Backtest encountered an error.');
+                        }
+                        break;
+                    case 'completed':
+                        completionEvent = eventData;
+                        cancelRequested = true;
+                        if (completionEvent.success) {
+                            showSuccessMessage(completionEvent.message || 'Backtest completed successfully!');
+                        } else {
+                            showErrorMessage(completionEvent.message || 'Backtest failed.');
+                        }
+                        break;
+                    default:
+                        addConsoleLine(`Unknown event: ${rawLine}`, 'status');
+                }
+            }
+
+            if (cancelRequested) {
+                await reader.cancel();
+                break;
+            }
+        }
+
+        if (buffer.trim()) {
+            try {
+                const leftoverEvent = JSON.parse(buffer);
+                if (leftoverEvent.event === 'output' && leftoverEvent.line) {
+                    handleConsoleLine(leftoverEvent.line);
+                } else if (leftoverEvent.event === 'completed') {
+                    completionEvent = leftoverEvent;
+                }
+            } catch (error) {
+                // Ignore trailing parse errors
+            }
+        }
+
+        if (!completionEvent) {
+            completionEvent = { success: false, message: 'Backtest did not complete.' };
+            showErrorMessage(completionEvent.message);
+        }
+
+        if (completionEvent.success) {
             setTimeout(() => {
                 loadBacktestResults();
-            }, 1000);
-        } else {
-            addConsoleLine(`ERROR: ${result.error}`, 'error');
-            showErrorMessage(`Backtest failed: ${result.error}`);
+            }, 500);
         }
     } catch (error) {
+        addConsoleLine(`ERROR: ${error.message}`, 'error');
         showErrorMessage(`Error running backtest: ${error.message}`);
+        if (!completionEvent) {
+            completionEvent = { success: false, message: error.message };
+        }
     } finally {
-        setRunningState(false);
+        const wasSuccessful = completionEvent && completionEvent.success;
+        updateProgressBar(wasSuccessful ? 100 : 0, completionEvent ? completionEvent.message : null);
+        setRunningState(false, {
+            success: wasSuccessful,
+            message: completionEvent ? completionEvent.message : undefined,
+        });
     }
 }
 
@@ -222,11 +318,9 @@ function displayComparisonResults(comparison, report) {
 }
 
 // Set UI running state
-function setRunningState(isRunning) {
+function setRunningState(isRunning, options = {}) {
     const runButton = document.getElementById('runButton');
     const progressContainer = document.getElementById('progressContainer');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
     const consoleContainer = document.getElementById('consoleContainer');
 
     if (isRunning) {
@@ -234,43 +328,46 @@ function setRunningState(isRunning) {
         runButton.textContent = 'Running...';
         progressContainer.classList.remove('hidden');
         consoleContainer.classList.remove('hidden');
-        progressFill.style.width = '0%';
-        progressText.textContent = 'Running backtest...';
+        updateProgressBar(0, 'Running backtest...');
 
-        // Clear and initialize console
         clearConsole();
         addConsoleLine('Starting backtest execution...', 'status');
-
-        // Simulate progress (since we don't have real progress updates)
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 5;
-            if (progress > 85) progress = 85; // Leave room for final completion
-            progressFill.style.width = `${progress}%`;
-
-            if (!isRunning) {
-                clearInterval(progressInterval);
-            }
-        }, 1000);
-
-        // Store interval for cleanup
-        window.progressInterval = progressInterval;
     } else {
         runButton.disabled = false;
         runButton.textContent = '🚀 Run Backtest';
-        progressFill.style.width = '100%';
-        progressText.textContent = 'Completed!';
+        const { success = true, message } = options;
+        if (success) {
+            updateProgressBar(100, message || 'Completed!');
+        } else {
+            updateProgressBar(0, message || 'Failed');
+        }
 
         // Hide progress and console after a delay
         setTimeout(() => {
             progressContainer.classList.add('hidden');
             consoleContainer.classList.add('hidden');
         }, 3000);
+    }
+}
 
-        // Clear progress interval
-        if (window.progressInterval) {
-            clearInterval(window.progressInterval);
-        }
+function updateProgressBar(percent, message) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    if (!progressFill || !progressText) {
+        return;
+    }
+
+    if (typeof percent === 'number' && !Number.isNaN(percent)) {
+        const clamped = Math.max(0, Math.min(100, percent));
+        progressFill.style.width = `${clamped}%`;
+    }
+
+    if (typeof message === 'string' && message.trim()) {
+        const cleaned = message.replace(/^\[.*?\]\s*/, '').trim();
+        progressText.textContent = cleaned || 'Running backtest...';
+    } else if (!progressText.textContent) {
+        progressText.textContent = 'Running backtest...';
     }
 }
 
@@ -321,6 +418,48 @@ function addConsoleLine(text, type = 'default') {
     scrollConsoleToBottom();
 }
 
+function handleConsoleLine(line) {
+    if (!line) {
+        return;
+    }
+
+    let type = 'default';
+    if (line.includes('[PROGRESS]')) {
+        type = 'progress';
+    } else if (line.includes('[STATUS]')) {
+        type = 'status';
+    } else if (line.includes('[API]')) {
+        type = 'api';
+    } else if (line.includes('[MODEL]')) {
+        type = 'model';
+    } else if (line.includes('[BET]')) {
+        type = 'bet';
+    } else if (line.includes('[COMPLETE]')) {
+        type = 'complete';
+    } else if (line.includes('[INIT]')) {
+        type = 'status';
+    } else if (line.includes('[WEB]')) {
+        type = 'status';
+    } else if (line.toLowerCase().includes('error') || line.toLowerCase().includes('failed')) {
+        type = 'error';
+    }
+
+    const displayText = line.replace(/^\[.*?\]\s*/, '').trim() || line;
+    addConsoleLine(displayText, type);
+
+    if (type === 'progress') {
+        const match = line.match(/\[PROGRESS\]\s+([\d.]+)%/);
+        if (match) {
+            const percent = parseFloat(match[1]);
+            if (!Number.isNaN(percent)) {
+                updateProgressBar(percent, displayText);
+            }
+        }
+    } else if (line.includes('[COMPLETE]')) {
+        updateProgressBar(100, displayText);
+    }
+}
+
 function clearConsole() {
     const consoleOutput = document.getElementById('consoleOutput');
     if (consoleOutput) {
@@ -341,12 +480,7 @@ function parseAndDisplayConsoleOutput(output) {
         return;
     }
 
-    console.log('Raw output received:', output); // Debug logging
-
-    // Split output into lines and process each one
     const lines = output.split('\n').filter(line => line.trim());
-
-    console.log('Parsed lines:', lines); // Debug logging
 
     if (lines.length === 0) {
         addConsoleLine('Output received but no lines found', 'error');
@@ -354,33 +488,7 @@ function parseAndDisplayConsoleOutput(output) {
     }
 
     for (const line of lines) {
-        let type = 'default';
-
-        // Determine line type based on content
-        if (line.includes('[PROGRESS]')) {
-            type = 'progress';
-        } else if (line.includes('[STATUS]')) {
-            type = 'status';
-        } else if (line.includes('[API]')) {
-            type = 'api';
-        } else if (line.includes('[MODEL]')) {
-            type = 'model';
-        } else if (line.includes('[BET]')) {
-            type = 'bet';
-        } else if (line.includes('[COMPLETE]')) {
-            type = 'complete';
-        } else if (line.includes('[INIT]')) {
-            type = 'status';
-        } else if (line.includes('[WEB]')) {
-            type = 'status';
-        } else if (line.toLowerCase().includes('error') || line.toLowerCase().includes('failed')) {
-            type = 'error';
-        }
-
-        // Clean up the line by removing the prefix tags for display
-        let displayText = line.replace(/^\[.*?\]\s*/, '');
-        console.log('Adding line:', displayText, 'type:', type); // Debug logging
-        addConsoleLine(displayText, type);
+        handleConsoleLine(line);
     }
 }
 
