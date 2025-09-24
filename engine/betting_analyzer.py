@@ -43,7 +43,10 @@ from nba_data.advanced_stats import get_last_10_stats as nba_get_last_10_stats
 from nba_data.advanced_stats import get_season_team_stats as nba_get_season_team_stats
 from nba_data.four_factors import get_four_factors_team_stats as nba_get_four_factors_team_stats
 from nba_data.head_to_head import get_head_to_head_profile as nba_get_head_to_head_profile
-from nba_data.hustle_stats import get_team_hustle_profile as nba_get_team_hustle_profile
+from nba_data.hustle_stats import (
+    TeamHustleProfile,
+    get_team_hustle_profile as nba_get_team_hustle_profile,
+)
 from nba_data.league_analytics import compute_league_average_ortg as nba_compute_league_average_ortg
 from nba_data.misc_stats import get_misc_team_stats as nba_get_misc_team_stats
 from nba_data.schedule_fatigue import get_team_rest_profile as nba_get_team_rest_profile
@@ -176,6 +179,23 @@ def _build_contextual_factors(
     }
 
 
+def _build_neutral_hustle_profile() -> TeamHustleProfile:
+    """Create a neutral hustle profile when as-of data lacks hustle metrics."""
+
+    return TeamHustleProfile(
+        deflections=0.0,
+        charges_drawn=0.0,
+        loose_balls_recovered=0.0,
+        screen_assists=0.0,
+        contested_shots=0.0,
+        box_outs=0.0,
+        minutes_played=0.0,
+        team_effort_score=0.0,
+        effort_percentile=None,
+        league_average_effort=None,
+    )
+
+
 def _convert_asof_stats_to_team_data(
     asof_stats: Dict[str, float],
     team_name: str,
@@ -242,7 +262,7 @@ def _convert_asof_stats_to_team_data(
         misc_last10={},  # Not available from as-of stats
         rest_profile=rest_profile,
         venue_splits={},  # Not available from as-of stats
-        hustle_profile={},  # Not available from as-of stats
+        hustle_profile=_build_neutral_hustle_profile(),
     )
 
 
