@@ -252,7 +252,11 @@ def _fetch_season_stats_asof(
             'efg_pct_season': row.get('EFG_PCT', 0),
             'tov_pct_season': row.get('TM_TOV_PCT', 0),
             'orb_pct_season': row.get('OREB_PCT', 0),
-            'ft_fga_season': row.get('FTA_RATE', 0),
+            'fta_rate_season': row.get('FTA_RATE', 0),
+            'opp_efg_pct_season': row.get('OPP_EFG_PCT', 0),
+            'opp_tov_pct_season': row.get('OPP_TOV_PCT', 0),
+            'opp_oreb_pct_season': row.get('OPP_OREB_PCT', 0),
+            'opp_fta_rate_season': row.get('OPP_FTA_RATE', 0),
         }
     elif measure_type == 'Misc':
         return {
