@@ -43,7 +43,10 @@ from nba_data.advanced_stats import get_last_10_stats as nba_get_last_10_stats
 from nba_data.advanced_stats import get_season_team_stats as nba_get_season_team_stats
 from nba_data.four_factors import get_four_factors_team_stats as nba_get_four_factors_team_stats
 from nba_data.head_to_head import get_head_to_head_profile as nba_get_head_to_head_profile
-from nba_data.hustle_stats import get_team_hustle_profile as nba_get_team_hustle_profile
+from nba_data.hustle_stats import (
+    TeamHustleProfile,
+    get_team_hustle_profile as nba_get_team_hustle_profile,
+)
 from nba_data.league_analytics import compute_league_average_ortg as nba_compute_league_average_ortg
 from nba_data.misc_stats import get_misc_team_stats as nba_get_misc_team_stats
 from nba_data.schedule_fatigue import get_team_rest_profile as nba_get_team_rest_profile
@@ -176,6 +179,23 @@ def _build_contextual_factors(
     }
 
 
+def _build_neutral_hustle_profile() -> TeamHustleProfile:
+    """Create a neutral hustle profile when as-of data lacks hustle metrics."""
+
+    return TeamHustleProfile(
+        deflections=0.0,
+        charges_drawn=0.0,
+        loose_balls_recovered=0.0,
+        screen_assists=0.0,
+        contested_shots=0.0,
+        box_outs=0.0,
+        minutes_played=0.0,
+        team_effort_score=0.0,
+        effort_percentile=None,
+        league_average_effort=None,
+    )
+
+
 def _convert_asof_stats_to_team_data(
     asof_stats: Dict[str, float],
     team_name: str,
@@ -189,20 +209,37 @@ def _convert_asof_stats_to_team_data(
     """
     # Create minimal season stats
     season_stats = {
-        'pace': asof_stats.get('pace_season', 100),
-        'ortg': asof_stats.get('ortg_season', 110),
-        'drtg': asof_stats.get('drtg_season', 110),
-        'efg_pct': asof_stats.get('efg_pct_season', 0.5),
-        'tov_pct': asof_stats.get('tov_pct_season', 15),
-        'orb_pct': asof_stats.get('orb_pct_season', 25),
-        'ft_fga': asof_stats.get('ft_fga_season', 0.2),
+        "pace": asof_stats.get("pace_season", 100.0),
+        "ortg": asof_stats.get("ortg_season", 110.0),
+        "drtg": asof_stats.get("drtg_season", 110.0),
     }
 
     # Create minimal last-10 stats
     last10_stats = {
-        'pace': asof_stats.get('pace_last10', season_stats['pace']),
-        'ortg': asof_stats.get('ortg_last10', season_stats['ortg']),
-        'drtg': asof_stats.get('drtg_last10', season_stats['drtg']),
+        "pace": asof_stats.get("pace_last10", season_stats["pace"]),
+        "ortg": asof_stats.get("ortg_last10", season_stats["ortg"]),
+        "drtg": asof_stats.get("drtg_last10", season_stats["drtg"]),
+    }
+
+    # Provide Four Factors with sensible league-average defaults if unavailable
+    default_four_factors = {
+        "efg_pct": 0.54,
+        "fta_rate": 0.25,
+        "tov_pct": 0.14,
+        "oreb_pct": 0.28,
+        "opp_efg_pct": 0.54,
+        "opp_fta_rate": 0.25,
+        "opp_tov_pct": 0.14,
+        "opp_oreb_pct": 0.28,
+    }
+
+    four_factors_season = {
+        key: asof_stats.get(f"{key}_season", default_four_factors[key])
+        for key in default_four_factors
+    }
+    four_factors_last10 = {
+        key: asof_stats.get(f"{key}_last10", four_factors_season[key])
+        for key in default_four_factors
     }
 
     # Create proper TeamRestProfile object for compatibility
@@ -221,18 +258,8 @@ def _convert_asof_stats_to_team_data(
         team_name=team_name,
         season=season_stats,
         last_10=last10_stats,
-        four_factors_season={
-            'efg_pct': season_stats['efg_pct'],
-            'tov_pct': season_stats['tov_pct'],
-            'orb_pct': season_stats['orb_pct'],
-            'ft_fga': season_stats['ft_fga'],
-        },
-        four_factors_last10={
-            'efg_pct': last10_stats.get('efg_pct', season_stats['efg_pct']),
-            'tov_pct': last10_stats.get('tov_pct', season_stats['tov_pct']),
-            'orb_pct': last10_stats.get('orb_pct', season_stats['orb_pct']),
-            'ft_fga': last10_stats.get('ft_fga', season_stats['ft_fga']),
-        },
+        four_factors_season=four_factors_season,
+        four_factors_last10=four_factors_last10,
         misc_season={
             'pts_off_tov': asof_stats.get('pts_off_tov_season', 0),
             'pts_2nd_chance': asof_stats.get('pts_2nd_chance_season', 0),
@@ -242,7 +269,7 @@ def _convert_asof_stats_to_team_data(
         misc_last10={},  # Not available from as-of stats
         rest_profile=rest_profile,
         venue_splits={},  # Not available from as-of stats
-        hustle_profile={},  # Not available from as-of stats
+        hustle_profile=_build_neutral_hustle_profile(),
     )
 
 
