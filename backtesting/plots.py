@@ -166,7 +166,7 @@ def plot_drawdown(results_df: pd.DataFrame, run_dir: Path) -> str:
     max_dd_date = results_df.loc[drawdown.idxmin(), 'date']
 
     ax.axhline(y=max_dd, color='darkred', linestyle='--', alpha=0.7,
-               label='.2f')
+               label=f'Max DD: ${max_dd:.2f}')
 
     # Format plot
     ax.set_title('Drawdown Chart', fontsize=14, fontweight='bold')

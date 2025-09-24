@@ -69,7 +69,7 @@ def save_backtest_summary(
         'performance': {
             'roi_pct': round(metrics.get('roi_pct', 0), 2),
             'hit_rate_pct': round(metrics.get('hit_rate', 0) * 100, 1),
-            'total_pnl': round(metrics.get('total_pnl', 2), 2),
+            'total_pnl': round(metrics.get('total_pnl', 0.0), 2),
             'max_drawdown_pct': round(metrics.get('max_drawdown', 0) * -100, 1),  # Convert to positive percentage
             'sharpe_ratio': round(metrics.get('sharpe_ratio', 0), 2),
             'brier_score': round(metrics.get('brier_score', 0), 3),
@@ -220,18 +220,22 @@ def save_model_comparison(live_metrics: Dict, backtest_id: Optional[str] = None)
         live_metrics: Current live model metrics
         backtest_id: ID of backtest to compare against (uses latest if None)
     """
+    # Get benchmark data once
+    benchmark = get_comparison_benchmark()
+    if not benchmark:
+        return
+
     if backtest_id is None:
-        benchmark = get_comparison_benchmark()
-        if benchmark:
-            backtest_id = benchmark['backtest_id']
-        else:
-            return
+        backtest_id = benchmark['backtest_id']
+    elif benchmark['backtest_id'] != backtest_id:
+        # If explicit backtest_id doesn't match latest benchmark, we can't compare reliably
+        return
 
     comparison = {
         'timestamp': datetime.now().isoformat(),
         'backtest_id': backtest_id,
         'live_performance': live_metrics,
-        'benchmark': get_comparison_benchmark()
+        'benchmark': benchmark
     }
 
     # Save to comparisons directory

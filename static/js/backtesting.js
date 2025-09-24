@@ -23,6 +23,10 @@ function initializeEventListeners() {
 
     // Refresh results button
     document.getElementById('refreshResults').addEventListener('click', loadBacktestResults);
+
+    // Console controls
+    document.getElementById('clearConsole').addEventListener('click', clearConsole);
+    document.getElementById('scrollToBottom').addEventListener('click', scrollConsoleToBottom);
 }
 
 // Handle backtest form submission
@@ -52,12 +56,18 @@ async function handleBacktestSubmit(event) {
         const result = await response.json();
 
         if (result.ok) {
+            // Parse and display the console output
+            if (result.output) {
+                parseAndDisplayConsoleOutput(result.output);
+            }
+
             showSuccessMessage('Backtest completed successfully!');
             // Reload results after a short delay
             setTimeout(() => {
                 loadBacktestResults();
             }, 1000);
         } else {
+            addConsoleLine(`ERROR: ${result.error}`, 'error');
             showErrorMessage(`Backtest failed: ${result.error}`);
         }
     } catch (error) {
@@ -217,25 +227,31 @@ function setRunningState(isRunning) {
     const progressContainer = document.getElementById('progressContainer');
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
+    const consoleContainer = document.getElementById('consoleContainer');
 
     if (isRunning) {
         runButton.disabled = true;
         runButton.textContent = 'Running...';
         progressContainer.classList.remove('hidden');
+        consoleContainer.classList.remove('hidden');
         progressFill.style.width = '0%';
         progressText.textContent = 'Running backtest...';
+
+        // Clear and initialize console
+        clearConsole();
+        addConsoleLine('Starting backtest execution...', 'status');
 
         // Simulate progress (since we don't have real progress updates)
         let progress = 0;
         const progressInterval = setInterval(() => {
-            progress += Math.random() * 10;
-            if (progress > 90) progress = 90;
+            progress += Math.random() * 5;
+            if (progress > 85) progress = 85; // Leave room for final completion
             progressFill.style.width = `${progress}%`;
 
             if (!isRunning) {
                 clearInterval(progressInterval);
             }
-        }, 500);
+        }, 1000);
 
         // Store interval for cleanup
         window.progressInterval = progressInterval;
@@ -245,10 +261,11 @@ function setRunningState(isRunning) {
         progressFill.style.width = '100%';
         progressText.textContent = 'Completed!';
 
-        // Hide progress after a delay
+        // Hide progress and console after a delay
         setTimeout(() => {
             progressContainer.classList.add('hidden');
-        }, 2000);
+            consoleContainer.classList.add('hidden');
+        }, 3000);
 
         // Clear progress interval
         if (window.progressInterval) {
@@ -288,6 +305,83 @@ function showMessage(message, type) {
             messageDiv.remove();
         }
     }, 5000);
+}
+
+// Console output functions
+function addConsoleLine(text, type = 'default') {
+    const consoleOutput = document.getElementById('consoleOutput');
+    if (!consoleOutput) return;
+
+    const lineDiv = document.createElement('div');
+    lineDiv.className = 'console-line';
+    lineDiv.setAttribute('data-type', type);
+    lineDiv.textContent = text;
+
+    consoleOutput.appendChild(lineDiv);
+    scrollConsoleToBottom();
+}
+
+function clearConsole() {
+    const consoleOutput = document.getElementById('consoleOutput');
+    if (consoleOutput) {
+        consoleOutput.innerHTML = '';
+    }
+}
+
+function scrollConsoleToBottom() {
+    const consoleOutput = document.getElementById('consoleOutput');
+    if (consoleOutput) {
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+}
+
+function parseAndDisplayConsoleOutput(output) {
+    if (!output) {
+        addConsoleLine('No output received from backtest', 'error');
+        return;
+    }
+
+    console.log('Raw output received:', output); // Debug logging
+
+    // Split output into lines and process each one
+    const lines = output.split('\n').filter(line => line.trim());
+
+    console.log('Parsed lines:', lines); // Debug logging
+
+    if (lines.length === 0) {
+        addConsoleLine('Output received but no lines found', 'error');
+        return;
+    }
+
+    for (const line of lines) {
+        let type = 'default';
+
+        // Determine line type based on content
+        if (line.includes('[PROGRESS]')) {
+            type = 'progress';
+        } else if (line.includes('[STATUS]')) {
+            type = 'status';
+        } else if (line.includes('[API]')) {
+            type = 'api';
+        } else if (line.includes('[MODEL]')) {
+            type = 'model';
+        } else if (line.includes('[BET]')) {
+            type = 'bet';
+        } else if (line.includes('[COMPLETE]')) {
+            type = 'complete';
+        } else if (line.includes('[INIT]')) {
+            type = 'status';
+        } else if (line.includes('[WEB]')) {
+            type = 'status';
+        } else if (line.toLowerCase().includes('error') || line.toLowerCase().includes('failed')) {
+            type = 'error';
+        }
+
+        // Clean up the line by removing the prefix tags for display
+        let displayText = line.replace(/^\[.*?\]\s*/, '');
+        console.log('Adding line:', displayText, 'type:', type); // Debug logging
+        addConsoleLine(displayText, type);
+    }
 }
 
 // Utility functions for future chart implementation

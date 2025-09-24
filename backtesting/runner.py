@@ -112,12 +112,6 @@ def main() -> None:
         help="Override number of simulations per game"
     )
     parser.add_argument(
-        "--strict-before-tip",
-        action="store_true",
-        default=True,
-        help="Use tipoff time for as-of (default: day before)"
-    )
-    parser.add_argument(
         "--num-workers",
         type=int,
         default=1,
@@ -134,8 +128,7 @@ def main() -> None:
         seasons=seasons,
         dataset_path=args.dataset,
         config_path=args.cfg,
-        num_simulations=args.sims,
-        strict_before_tip=args.strict_before_tip
+        num_simulations=args.sims
     )
 
     print("Backtesting completed successfully!")
@@ -145,8 +138,7 @@ def run_backtest(
     seasons: List[int],
     dataset_path: str,
     config_path: str,
-    num_simulations: Optional[int] = None,
-    strict_before_tip: bool = True
+    num_simulations: Optional[int] = None
 ) -> Dict:
     """
     Execute comprehensive NBA backtesting across specified seasons.
@@ -156,7 +148,6 @@ def run_backtest(
         dataset_path: Path to slim odds/results dataset
         config_path: Path to YAML configuration file
         num_simulations: Override for simulations per game (uses config default if None)
-        strict_before_tip: If True, use tipoff time; if False, use day before
 
     Returns:
         Dictionary with complete backtest results and metadata
@@ -171,24 +162,27 @@ def run_backtest(
         config['engine']['sims'] = num_simulations
 
     # Load and filter dataset
-    print(f"Loading dataset from {dataset_path}")
+    print(f"[INIT] Loading dataset from {dataset_path}", flush=True)
     df = load_slim(dataset_path)
     df = df[df['season_end_year'].isin(seasons)].copy()
 
     if df.empty:
         raise ValueError(f"No games found for seasons {seasons}")
 
-    print(f"Loaded {len(df)} games across {len(seasons)} seasons")
+    print(f"[INIT] Loaded {len(df)} games across {len(seasons)} seasons", flush=True)
 
     # Initialize cache
+    print(f"[INIT] Initializing API cache in {config['engine']['cache_dir']}", flush=True)
     cache = SimpleCache(config['engine']['cache_dir'])
+    print(f"[INIT] Cache initialized, starting backtest processing...", flush=True)
 
     # Initialize results tracking
     per_game_results = []
     bet_counts = {season: 0 for season in seasons}
+    daily_bet_counts = {}  # Track bets per date
 
     # Sort games chronologically for proper backtesting
-    df = df.sort_values(['date', 'game_key'])
+    df = df.sort_values(['date', 'game_key']).reset_index(drop=True)
 
     # Process each game
     for idx, game in df.iterrows():
@@ -196,20 +190,24 @@ def run_backtest(
             game_result = _process_single_game(
                 game=game,
                 config=config,
-                cache=cache,
-                strict_before_tip=strict_before_tip
+                cache=cache
             )
 
             if game_result:
                 per_game_results.append(game_result)
                 bet_counts[game['season_end_year']] += 1
+                # Update daily bet count
+                game_date_str = game['date'].strftime('%Y-%m-%d')
+                daily_bet_counts[game_date_str] = daily_bet_counts.get(game_date_str, 0) + 1
 
-                # Progress indicator
-                if (idx + 1) % 100 == 0:
-                    print(f"Processed {idx + 1}/{len(df)} games...")
+                # Progress indicator with more detail
+                if (idx + 1) % 50 == 0 or idx == 0:
+                    progress_pct = ((idx + 1) / len(df)) * 100
+                    print(f"[PROGRESS] {progress_pct:.1f}% - Processed {idx + 1}/{len(df)} games ({bet_counts[game['season_end_year']]} bets placed so far)", flush=True)
+                    print(f"[STATUS] Currently processing: {home_team} vs {away_team} ({game['season_end_year']})", flush=True)
 
         except Exception as e:
-            print(f"Error processing game {game['game_key']}: {e}")
+            print(f"Error processing game {game['game_key']}: {e}", flush=True)
             continue
 
     # Generate aggregate results
@@ -245,21 +243,32 @@ def run_backtest(
     print(f"Elapsed time: {elapsed:.2f} seconds")
     print(f"Results saved to: {run_dir}")
 
+    print(f"[COMPLETE] Backtest finished! Processed {len(df)} games, placed {len(per_game_results)} bets", flush=True)
+
+    # Season breakdown
+    if bet_counts:
+        print("\n[SUMMARY] Bets by Season:", flush=True)
+        for season, count in sorted(bet_counts.items()):
+            print(f"  {season}: {count} bets", flush=True)
+
+    print(f"[COMPLETE] Results saved to: {run_dir}", flush=True)
+
     return {
         'per_game_results': results_df,
         'metrics': metrics,
         'config': config,
         'run_dir': str(run_dir),
         'timestamp': timestamp,
-        'elapsed_seconds': elapsed
+        'elapsed_seconds': elapsed,
+        'bet_counts': bet_counts,  # Season-by-season bet counts
+        'daily_bet_counts': daily_bet_counts  # Daily bet distribution
     }
 
 
 def _process_single_game(
     game: pd.Series,
     config: Dict,
-    cache: SimpleCache,
-    strict_before_tip: bool
+    cache: SimpleCache
 ) -> Optional[Dict]:
     """
     Process a single game for backtesting.
@@ -268,7 +277,6 @@ def _process_single_game(
         game: Game data row
         config: Backtest configuration
         cache: API cache instance
-        strict_before_tip: Whether to use strict tipoff timing
 
     Returns:
         Dictionary with game results, or None if no bet placed
@@ -278,15 +286,12 @@ def _process_single_game(
     home_team = normalize_team_name(game['home'])
     away_team = normalize_team_name(game['away'])
 
-    # Determine as_of date (day before game, or tipoff time if available)
-    if strict_before_tip:
-        # For now, use day before since we don't have tipoff times
-        # TODO: Add tipoff time fetching from ScoreboardV3 if needed
-        as_of = game_date - timedelta(days=1)
-    else:
-        as_of = game_date - timedelta(days=1)
+    # Determine as_of date (day before game for historical data)
+    as_of = game_date - timedelta(days=1)
 
     try:
+        print(f"[API] Fetching as-of stats for {home_team} vs {away_team} (as of {as_of.date()})", flush=True)
+
         # Get team IDs
         home_id = get_team_id(home_team)
         away_id = get_team_id(away_team)
@@ -306,17 +311,13 @@ def _process_single_game(
             cache=cache
         )
 
+        print(f"[MODEL] Running simulation for {home_team} vs {away_team} ({config['engine']['sims']} sims)", flush=True)
+
     except Exception as e:
         print(f"Failed to fetch stats for {game_key}: {e}")
         return None
 
-    # Build TeamStats objects (reuse existing factory if available)
-    try:
-        # For now, create basic team stats dicts - will be enhanced when we modify betting_analyzer
-        home_team_stats = _create_team_stats_from_asof(home_stats, "home")
-        away_team_stats = _create_team_stats_from_asof(away_stats, "away")
-
-        # Run model simulation
+    # Run model simulation in backtest mode with as-of data
         model_results, _ = compute_model_report(
             home_team=home_team,
             away_team=away_team,
@@ -325,7 +326,10 @@ def _process_single_game(
             sportsbook_line=game['spread_home_close_signed'],
             decimal_odds=2.0,  # Assume -110 = 1.909 decimal, but use 2.0 for now
             upcoming_game_date=game_date,
-            num_simulations=config['engine']['sims']
+            num_simulations=config['engine']['sims'],
+            backtest_mode=True,
+            as_of=as_of,
+            seed=config['engine'].get('seed')  # Use configured seed for reproducibility
         )
 
     except Exception as e:
@@ -340,7 +344,18 @@ def _process_single_game(
     )
 
     if not bet_decision:
+        print(f"[BET] No bet placed for {home_team} vs {away_team}", flush=True)
         return None  # No bet placed
+
+    print(f"[BET] Placed {bet_decision['side']} bet on {home_team if bet_decision['side'] == 'home' else away_team} vs {away_team if bet_decision['side'] == 'home' else home_team} (edge: {bet_decision.get('edge_percentage', 'N/A')}%)", flush=True)
+
+    # Check daily bet limit
+    game_date_str = game_date.strftime('%Y-%m-%d')
+    current_daily_bets = daily_bet_counts.get(game_date_str, 0)
+    max_daily_bets = config['entry'].get('max_bets_per_day', 10)
+
+    if current_daily_bets >= max_daily_bets:
+        return None  # Daily limit reached
 
     # Calculate bet outcome and P&L
     outcome = _calculate_bet_outcome(
@@ -359,37 +374,19 @@ def _process_single_game(
         'market': bet_decision['market'],
         'side': bet_decision['side'],
         'close_line': bet_decision['close_line'],
-        'fair_line': bet_decision['fair_line'],
+        'edge_percentage': bet_decision['edge_percentage'],
         'cover_prob': bet_decision['cover_prob'],
         'stake': bet_decision['stake'],
         'pnl': outcome['pnl'],
         'ev_units': outcome['ev_units'],
-        'edge_pts': bet_decision['edge_pts'],
+        'sportsbook_line': bet_decision['sportsbook_line'],
+        'final_margin_home': game['final_margin_home'],  # For stress testing
+        'spread_home_close_signed': game['spread_home_close_signed'],  # Original spread
         'b2b': game.get('b2b', False),
         'three_in_four': game.get('three_in_four', False),
         'four_in_six': game.get('four_in_six', False),
-        'covered': outcome['covered']
-    }
-
-
-def _create_team_stats_from_asof(stats: Dict, location: str) -> Dict:
-    """
-    Create TeamStats-compatible dict from as-of statistics.
-
-    This is a temporary function until we modify the existing TeamStats creation.
-    """
-    # Basic mapping - will be enhanced when we integrate with existing system
-    return {
-        'pace': stats.get('pace_season', 100),
-        'ortg': stats.get('ortg_season', 110),
-        'drtg': stats.get('drtg_season', 110),
-        'efg_pct': stats.get('efg_pct_season', 0.5),
-        'tov_pct': stats.get('tov_pct_season', 15),
-        'orb_pct': stats.get('orb_pct_season', 25),
-        'ft_fga': stats.get('ft_fga_season', 0.2),
-        'location': location,
-        'b2b': stats.get('b2b', False),
-        'rest_days': 2 if not stats.get('b2b', False) else 1
+        'covered': outcome['covered'],
+        'is_push': outcome.get('is_push', False)
     }
 
 
@@ -413,24 +410,29 @@ def _make_bet_decision(
 
     # For now, focus on spreads
     if market == 'spread':
-        # Extract model predictions
-        fair_spread = model_results.get('fair_spread', 0)
-        cover_prob = model_results.get('home_cover_prob', 0.5)
-        edge_pts = abs(fair_spread - game['spread_home_close_signed'])
+        # Extract betting analysis from nested structure
+        betting_analysis = model_results.get('betting_analysis', {})
+        edge_percentage = betting_analysis.get('edge_percentage', 0.0)
+        win_probability = betting_analysis.get('win_probability', 0.5)
+        sportsbook_line = betting_analysis.get('sportsbook_line', game['spread_home_close_signed'])
 
-        # Check minimum edge requirement
-        if edge_pts < config['entry']['min_edge_pts']:
+        # Check minimum edge requirement (using edge percentage instead of point differential)
+        if edge_percentage < config['entry']['min_edge_pts']:
             return None
 
-        # Determine side and close line
-        if fair_spread < game['spread_home_close_signed']:
-            # Model favors home (expects smaller spread)
+        # Determine side based on edge (positive edge means bet on home)
+        if edge_percentage > 0:
             side = 'home'
             close_line = game['spread_home_close_signed']
+            cover_prob = win_probability
         else:
-            # Model favors away
+            # For away bets, we need to calculate the away win probability
+            # Since edge_percentage is for home, negative means away has edge
             side = 'away'
-            close_line = -game['spread_home_close_signed']  # Convert to away perspective
+            close_line = game['spread_home_close_signed']  # Keep original line for evaluation
+            # For away bets, cover probability is 1 - home_cover_prob - push_prob
+            push_prob = betting_analysis.get('push_probability', 0.0)
+            cover_prob = 1.0 - win_probability - push_prob
 
         # Calculate stake (simplified for now)
         stake = config['sizing']['unit_stake']
@@ -439,10 +441,10 @@ def _make_bet_decision(
             'market': market,
             'side': side,
             'close_line': close_line,
-            'fair_line': fair_spread,
+            'edge_percentage': edge_percentage,
             'cover_prob': cover_prob,
             'stake': stake,
-            'edge_pts': edge_pts
+            'sportsbook_line': sportsbook_line
         }
 
     return None
@@ -465,27 +467,44 @@ def _calculate_bet_outcome(
         Dictionary with outcome details
     """
     actual_margin = game['final_margin_home']
+    spread_line = game['spread_home_close_signed']
+
+    # Get actual odds from model results instead of hardcoding
+    betting_analysis = model_results.get('betting_analysis', {})
+    decimal_odds = betting_analysis.get('decimal_odds', 1.909)  # fallback to -110
 
     if bet_decision['market'] == 'spread':
-        if bet_decision['side'] == 'home':
-            covered = actual_margin > game['spread_home_close_signed']
-        else:  # away
-            covered = actual_margin < game['spread_home_close_signed']
+        # Check for push first (margin exactly equals the spread line)
+        is_push = abs(actual_margin - spread_line) < 1e-9  # Account for floating point precision
 
-        # Assume -110 pricing (1.909 decimal odds)
-        decimal_odds = 1.909
-        if covered:
-            pnl = bet_decision['stake'] * (decimal_odds - 1)
+        if is_push:
+            covered = False  # Push means no cover, stake returned (but we treat as no win)
+            pnl = 0.0  # Stake returned
         else:
-            pnl = -bet_decision['stake']
+            if bet_decision['side'] == 'home':
+                # Home covers if actual margin beats the spread
+                covered = actual_margin > spread_line
+            else:  # away
+                # Away covers if home margin is less than the spread (meaning away won by more than spread)
+                covered = actual_margin < spread_line
 
-        # Expected value in units
-        ev_units = (bet_decision['cover_prob'] * (decimal_odds - 1)) - ((1 - bet_decision['cover_prob']) * 1)
+            if covered:
+                pnl = bet_decision['stake'] * (decimal_odds - 1)
+            else:
+                pnl = -bet_decision['stake']
+
+        # Calculate expected value properly
+        push_prob = betting_analysis.get('push_probability', 0.0)
+        win_prob = bet_decision['cover_prob']
+        loss_prob = 1.0 - win_prob - push_prob
+
+        ev_units = (win_prob * (decimal_odds - 1)) + (push_prob * 0) - (loss_prob * 1)
 
     return {
-        'covered': covered,
+        'covered': covered if not is_push else False,  # False for push since no winner
         'pnl': pnl,
-        'ev_units': ev_units
+        'ev_units': ev_units,
+        'is_push': is_push
     }
 
 

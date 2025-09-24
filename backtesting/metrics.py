@@ -134,8 +134,9 @@ def calculate_risk_metrics(results_df: pd.DataFrame) -> Dict:
 
     # Win streak analysis
     win_streaks = _calculate_streaks(results_df['covered'])
+    loss_streaks = _calculate_streaks(~results_df['covered'])
     max_win_streak = max(win_streaks) if win_streaks else 0
-    max_loss_streak = max(_calculate_streaks(~results_df['covered'])) if win_streaks else 0
+    max_loss_streak = max(loss_streaks) if loss_streaks else 0
 
     return {
         'max_drawdown': max_drawdown,
@@ -189,18 +190,39 @@ def calculate_edge_bucket_analysis(results_df: pd.DataFrame) -> Dict:
     Returns:
         Dictionary with edge bucket analysis
     """
-    if results_df.empty or 'edge_pts' not in results_df.columns:
+    # Check for edge_percentage column (new format) or fallback to edge_pts
+    edge_col = 'edge_percentage' if 'edge_percentage' in results_df.columns else 'edge_pts'
+
+    if results_df.empty or edge_col not in results_df.columns:
         return {}
 
-    # Create edge buckets (0.5 point increments)
-    edge_bins = np.arange(0, results_df['edge_pts'].max() + 0.5, 0.5)
-    results_df = results_df.copy()
-    results_df['edge_bucket'] = pd.cut(results_df['edge_pts'], bins=edge_bins, right=False)
+    # Filter to only positive edges for meaningful analysis
+    positive_edges = results_df[results_df[edge_col] > 0].copy()
+
+    if positive_edges.empty:
+        return {'edge_buckets': [], 'message': 'No positive edges found for bucket analysis'}
+
+    # Create edge buckets (percentage increments for edge_percentage, point increments for edge_pts)
+    max_edge = positive_edges[edge_col].max()
+    if edge_col == 'edge_percentage':
+        # For percentages, use 1% increments
+        bucket_size = 1.0
+        edge_bins = np.arange(0, max_edge + bucket_size, bucket_size)
+    else:
+        # For points, use 0.5 point increments
+        bucket_size = 0.5
+        edge_bins = np.arange(0, max_edge + bucket_size, bucket_size)
+
+    # Ensure we have at least 2 bins
+    if len(edge_bins) < 2:
+        edge_bins = np.array([0, max(1.0, max_edge)])
+
+    positive_edges['edge_bucket'] = pd.cut(positive_edges[edge_col], bins=edge_bins, right=False)
 
     bucket_analysis = []
 
-    for bucket in results_df['edge_bucket'].cat.categories:
-        bucket_data = results_df[results_df['edge_bucket'] == bucket]
+    for bucket in positive_edges['edge_bucket'].cat.categories:
+        bucket_data = positive_edges[positive_edges['edge_bucket'] == bucket]
 
         if len(bucket_data) == 0:
             continue
@@ -234,13 +256,18 @@ def calculate_stress_test_metrics(results_df: pd.DataFrame, config: Dict) -> Dic
     Returns:
         Dictionary with stress test results
     """
+    # Check if required columns exist for stress testing
+    required_cols = ['close_line', 'final_margin_home', 'stake']
+    if not all(col in results_df.columns for col in required_cols):
+        return {'stress_tests': {'error': f'Missing required columns: {required_cols}'}}
+
     stress_results = {}
 
     if config['entry']['market'] == 'spread':
-        # Test re-pricing at close ±0.5 spreads
+        # Test re-pricing at close ±0.5 spreads using close_line from results
         for offset in [-0.5, 0.5]:
             stress_results[f'spread_{offset:+.1f}'] = _calculate_stress_roi(
-                results_df, 'spread_home_close_signed', offset
+                results_df, 'close_line', offset
             )
 
     # Test robustness to market movement

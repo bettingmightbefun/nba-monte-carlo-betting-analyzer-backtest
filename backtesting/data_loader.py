@@ -54,9 +54,9 @@ def load_slim(path: str) -> pd.DataFrame:
     # Load based on file extension
     if file_ext == '.xlsx':
         df = pd.read_excel(path)
-    elif file_ext == '.csv':
+    elif file_ext in ['.csv', '.gz']:
         # Handle both regular CSV and gzipped CSV
-        if str(path).endswith('.gz'):
+        if str(path).endswith('.gz') or file_ext == '.gz':
             df = pd.read_csv(path, compression='gzip')
         else:
             df = pd.read_csv(path)
@@ -206,7 +206,12 @@ def derive_game_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop('date_str', axis=1)
 
     # Derive season_end_year (NBA seasons are Oct-Jun, so season 2023 = 2023-24 season)
-    df['season_end_year'] = df['season'] + 1
+    if 'season_end_year' not in df.columns:
+        if 'season' in df.columns:
+            df['season_end_year'] = df['season'] + 1
+        else:
+            raise ValueError("Dataset must have either 'season' or 'season_end_year' column")
+    # If season_end_year already exists, keep it as-is
 
     # Calculate signed spread from home perspective
     # If home is favored, spread is positive (home gives points)

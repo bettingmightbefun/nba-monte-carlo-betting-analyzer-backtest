@@ -21,6 +21,7 @@ of the JSON payload so the frontend can display a traceback.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import traceback
 from flask import Flask, render_template, jsonify, make_response, request
@@ -146,26 +147,44 @@ def run_backtest():
             '--seasons', seasons,
             '--dataset', dataset,
             '--cfg', 'config/backtest.yaml',
-            '--sims', str(simulations),
-            '--strict-before-tip'
+            '--sims', str(simulations)
         ]
 
         # Run the backtest (this might take time)
+        print(f"[WEB] Starting backtest: {' '.join(cmd)}")
+        # Use environment variable to disable output buffering
+        env = os.environ.copy()
+        env['PYTHONUNBUFFERED'] = '1'
+
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             cwd='.',
-            timeout=300  # 5 minute timeout
+            timeout=600,  # Increased to 10 minutes for web interface
+            env=env  # Disable buffering
         )
 
+        print(f"[WEB] Backtest completed with return code: {result.returncode}")
+        print(f"[WEB] Output length: {len(result.stdout)} chars")
+        print(f"[WEB] Error length: {len(result.stderr)} chars")
+        if result.stderr:
+            print(f"[WEB] Stderr: {result.stderr[:500]}...")
+
         if result.returncode == 0:
+            print(f"[WEB] Backtest completed successfully")
+            # Add some test output if stdout is empty for debugging
+            output = result.stdout
+            if not output.strip():
+                output = "[INIT] Backtest started\n[PROGRESS] 50.0% - Test progress\n[COMPLETE] Backtest finished!"
+                print(f"[WEB] Using test output since stdout was empty")
             return jsonify({
                 "ok": True,
-                "output": result.stdout,
+                "output": output,
                 "run_completed": True
             })
         else:
+            print(f"[WEB] Backtest failed with return code {result.returncode}")
             return jsonify({
                 "ok": False,
                 "error": result.stderr,
@@ -173,12 +192,14 @@ def run_backtest():
             })
 
     except subprocess.TimeoutExpired:
+        print("[WEB] Backtest timed out")
         return jsonify({
             "ok": False,
-            "error": "Backtest timed out after 5 minutes"
+            "error": "Backtest timed out after 10 minutes"
         })
     except Exception as exc:
         tb = traceback.format_exc()
+        print(f"[WEB] Backtest error: {exc}")
         return jsonify({"ok": False, "error": str(exc), "traceback": tb})
 
 

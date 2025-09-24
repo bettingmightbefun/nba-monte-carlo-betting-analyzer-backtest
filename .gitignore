@@ -72,5 +72,6 @@ config/private.yaml
 
 # Data files (large datasets)
 *.csv.gz
+nba_2008-2025.csv
 large_data/
 data/large/
