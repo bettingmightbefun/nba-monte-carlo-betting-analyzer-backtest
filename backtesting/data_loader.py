@@ -213,11 +213,15 @@ def derive_game_features(df: pd.DataFrame) -> pd.DataFrame:
             raise ValueError("Dataset must have either 'season' or 'season_end_year' column")
     # If season_end_year already exists, keep it as-is
 
-    # Calculate signed spread from home perspective
-    # If home is favored, spread is positive (home gives points)
-    # If away is favored, spread is negative (home receives points)
+    # Calculate signed spread from the home team's perspective using betting conventions
+    # Betting markets list spreads as negative numbers for the favorite (they "lay" points)
+    # and positive numbers for the underdog (they "get" points). In our pipeline a
+    # positive number means the home team is receiving points while a negative number means
+    # they must win by more than the absolute value to cover. The previous implementation
+    # flipped this relationship which made every home favorite look like a massive underdog
+    # in the simulator, producing absurd 90%+ cover probabilities and huge betting edges.
     df['spread_home_close_signed'] = df.apply(
-        lambda row: row['spread'] if row['whos_favored'] == 'home' else -row['spread'],
+        lambda row: -row['spread'] if row['whos_favored'] == 'home' else row['spread'],
         axis=1
     )
 
