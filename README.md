@@ -1,11 +1,13 @@
-# 🎲 NBA Monte Carlo Betting Analyzer
+# 🎲 NBA Monte Carlo Betting Analyzer + Backtesting
 
 > **Find profitable NBA spread bets using 100k–1M virtual game simulations and real-time data**
+> **Evaluate strategies with comprehensive backtesting across multiple seasons**
 
 A sophisticated Monte Carlo simulation engine that runs 100,000 virtual NBA games by default—with a high-precision 1,000,000 iteration mode—to identify valuable betting opportunities. Built with production-ready, modular code architecture, advanced statistical modeling including **Four Factors analysis**, and a beautiful, responsive interface.
 
 ![NBA Monte Carlo](https://img.shields.io/badge/Monte%20Carlo-100k%E2%80%931M%20Simulations-red?style=for-the-badge&logo=dice)
 ![NBA Analysis](https://img.shields.io/badge/NBA-Betting%20Analysis-orange?style=for-the-badge&logo=basketball)
+![Backtesting](https://img.shields.io/badge/Backtesting-Leakage--Free-blue?style=for-the-badge&logo=chart-bar)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python)
 ![Flask](https://img.shields.io/badge/Flask-Web%20App-green?style=for-the-badge&logo=flask)
 ![Four Factors](https://img.shields.io/badge/Four%20Factors-Enhanced%20Model-purple?style=for-the-badge&logo=chart-line)
@@ -87,6 +89,44 @@ static/js/
 - **Modern ES6 modules** - Clean imports/exports
 - **Better organization** - Related code grouped together
 - **Future-ready** - Easy to add new features or modify existing ones
+
+## 🎯 **Backtesting System (NEW)**
+
+Evaluate your betting strategies across historical seasons with **leakage-free** data fetching:
+
+### **Key Features:**
+- **As-of-Date Data**: Fetches NBA stats as they appeared on game day (no future data leakage)
+- **Multi-Season Testing**: Test strategies across 2023-24, 2022-23, etc.
+- **Web Interface**: One-click backtesting with progress tracking
+- **Results Storage**: Persistent results with comparison tools
+- **CLI Tools**: Quick analysis and live model comparison
+
+### **Usage:**
+```bash
+# Run backtest from command line
+python -m backtesting.runner --seasons 2023 --dataset nba_2008-2025.csv --sims 5000
+
+# View results
+python -m backtesting.cli_view
+
+# Compare with live model
+python -m backtesting.cli_view --compare 8.5 53.2 0.045
+```
+
+### **Web Interface:**
+Visit `/backtesting` in your Flask app for:
+- Interactive configuration
+- Real-time progress tracking
+- Performance visualization
+- Historical results comparison
+
+### **Leakage Prevention:**
+- ✅ Stats fetched as-of game date
+- ✅ Rest/fatigue calculated from historical schedules only
+- ✅ No future games contaminate historical data
+- ✅ Deterministic simulations with configurable seeds
+
+---
 
 ### **Python Backend Architecture (NEW - Organized Structure)**
 ```
